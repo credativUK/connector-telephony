@@ -34,40 +34,34 @@ class PhoneCommon(models.AbstractModel):
 
     def _generic_reformat_phonenumbers(self, ids, vals):
         """Reformat phone numbers in E.164 format i.e. +33141981242"""
-        assert isinstance(self._country_field, (str, unicode, type(None))),\
+        assert isinstance(self._country_field, (basestring, type(None))),\
             'Wrong self._country_field'
-        assert isinstance(self._partner_field, (str, unicode, type(None))),\
+        assert isinstance(self._partner_field, (basestring, type(None))),\
             'Wrong self._partner_field'
         assert isinstance(self._phone_fields, list),\
             'self._phone_fields must be a list'
         if ids and isinstance(ids, (int, long)):
             ids = [ids]
-        if any([vals.get(field) for field in self._phone_fields]):
+        if any(vals.get(field) for field in self._phone_fields):
             user = self.env['res.users'].browse(self.env.uid)
             # country_id on res.company is a fields.function that looks at
             # company_id.partner_id.addres(default).country_id
-            countrycode = None
+            country = None
             if self._country_field:
                 if vals.get(self._country_field):
-                    country = self.env['res.country'].browse(vals[self._country_field])
-                    countrycode = country.code
+                    country = self.env['res.country'].browse(
+                        vals[self._country_field])
                 elif ids:
-                    rec = self.browse(ids[0])
-                    country = safe_eval(
-                        'rec.' + self._country_field, {'rec': rec})
-                    countrycode = country and country.code or None
+                    country = self.browse(ids[0]).get(self._country_field)
             elif self._partner_field:
                 if vals.get(self._partner_field):
-                    partner = self.env['res.partner'].browse(vals[self._partner_field])
-                    countrycode = partner.country_id and\
-                        partner.country_id.code or None
-                elif ids:
-                    rec = self.browse(ids[0])
-                    partner = safe_eval(
-                        'rec.' + self._partner_field, {'rec': rec})
+                    country = self.env['res.partner'].browse(
+                        vals[self._partner_field]).country_id
+                else:
+                    partner = self.browse(ids[0]).get(self._partner_field)
                     if partner:
-                        countrycode = partner.country_id and\
-                            partner.country_id.code or None
+                        country = partner.country_id
+            countrycode = country and country.code
             if not countrycode:
                 if user.company_id.country_id:
                     countrycode = user.company_id.country_id.code
@@ -93,10 +87,10 @@ class PhoneCommon(models.AbstractModel):
                                 "%s initial value: '%s' updated value: '%s'"
                                 % (field, init_value, vals[field]))
                     except Exception, e:
-                        # I do BOTH logger and raise, because:
-                        # raise is usefull when the record is created/written
+                        # BOTH log and raise:
+                        # raise is useful when the record is created/written
                         #    by a user via the Web interface
-                        # logger is usefull when the record is created/written
+                        # logger is useful when the record is created/written
                         #    via the webservices
                         _logger.error(
                             "Cannot reformat the phone number '%s' to "
@@ -127,7 +121,7 @@ class PhoneCommon(models.AbstractModel):
         _logger.debug(
             u"Call get_name_from_phone_number with number = %s"
             % presented_number)
-        if not isinstance(presented_number, (str, unicode)):
+        if not isinstance(presented_number, basestring):
             _logger.warning(
                 u"Number '%s' should be a 'str' or 'unicode' but it is a '%s'"
                 % (presented_number, type(presented_number)))
@@ -138,18 +132,12 @@ class PhoneCommon(models.AbstractModel):
 
         nr_digits_to_match_from_end = \
             self.env.user.company_id.number_of_digits_to_match_from_end
-        if len(presented_number) >= nr_digits_to_match_from_end:
-            end_number_to_match = presented_number[
-                -nr_digits_to_match_from_end:len(presented_number)]
-        else:
-            end_number_to_match = presented_number
+        end_number_to_match = presented_number[-nr_digits_to_match_from_end:]
 
         phoneobjects = self._get_phone_fields()
         phonefieldslist = []  # [('res.parter', 10), ('crm.lead', 20)]
         for objname in phoneobjects:
-            if (
-                    '_phone_name_sequence' in dir(self.env[objname]) and
-                    self.env[objname]._phone_name_sequence):
+            if self.env[objname].get(_phone_name_sequence):
                 phonefieldslist.append(
                     (objname, self.env[objname]._phone_name_sequence))
         phonefieldslist_sorted = sorted(
@@ -189,20 +177,17 @@ class PhoneCommon(models.AbstractModel):
 
     @api.model
     def _get_phone_fields(self):
-        '''Returns a dict with key = object name
-        and value = list of phone fields'''
+        '''Returns a list of models that have _phone_fields column'''
         models = self.env['ir.model'].search([('transient', '=', False)])
         res = []
         for model in models:
             senv = False
             try:
                 senv = self.env[model.model]
+                if isinstance(senv.get(_phone_fields), list):
+                    res.append(model.model)
             except:
-                continue
-            if (
-                    '_phone_fields' in dir(senv) and
-                    isinstance(senv._phone_fields, list)):
-                res.append(model.model)
+                pass
         return res
 
     @api.model
@@ -251,22 +236,22 @@ class ResPartner(models.Model):
 
     @api.multi
     def write(self, vals):
-        vals_reformated = self._generic_reformat_phonenumbers(None, vals)
+        vals_reformated = self._generic_reformat_phonenumbers(self._ids, vals)
         return super(ResPartner, self).write(vals_reformated)
 
     @api.multi
-    def name_get(self,  *args, **kwargs):
-        if self.env.context.get('callerid'):
-            res = []
-            for partner in self: #.browse(ids):
-                if partner.parent_id and partner.parent_id.is_company:
-                    name = u'%s (%s)' % (partner.name, partner.parent_id.name)
-                else:
-                    name = partner.name
-                res.append((partner.id, name))
-            return res
-        else:
+    def name_get(self):
+        if not self.env.context.get('callerid'):
             return super(ResPartner, self).name_get()
+
+        res = []
+        for partner in self:
+            if partner.parent_id and partner.parent_id.is_company:
+                name = u'%s (%s)' % (partner.name, partner.parent_id.name)
+            else:
+                name = partner.name
+            res.append((partner.id, name))
+        return res
 
 
 class ResCompany(models.Model):

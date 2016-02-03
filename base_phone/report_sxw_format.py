@@ -19,8 +19,7 @@
 #
 ##############################################################################
 
-from openerp.exceptions import ValidationError
-from openerp import models, api, fields
+from openerp import models
 from openerp.report import report_sxw
 import phonenumbers
 

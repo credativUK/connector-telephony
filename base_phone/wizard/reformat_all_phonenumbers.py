@@ -42,7 +42,6 @@ class reformat_all_phonenumbers(models.TransientModel):
         logger.info('Starting to reformat all the phone numbers')
         phonenumbers_not_reformatted = ''
         phoneobjects = self.env['phone.common']._get_phone_fields()
-        ctx_raise = dict(self.env.context, raise_if_phone_parse_fails=True)
         for objname in phoneobjects:
             fields = self.env[objname]._phone_fields
             obj = self.env[objname]
@@ -59,13 +58,13 @@ class reformat_all_phonenumbers(models.TransientModel):
             else:
                 domain = []
             all_ids = obj.search(domain)
-            for entry in obj.read(all_ids, fields):
+            for entry in all_ids.read(fields):
                 init_entry = entry.copy()
                 # entry is _updated_ by the fonction
                 # _generic_reformat_phonenumbers()
                 try:
-                    self.env.context = ctx_raise
-                    obj._generic_reformat_phonenumbers([entry['id']], entry)
+                    obj.with_context(raise_if_phone_parse_fails=True).\
+                            _generic_reformat_phonenumbers([entry['id']], entry)
                 except Exception, e:
                     name = obj.name_get([init_entry['id']])[0][1]
                     phonenumbers_not_reformatted += \
@@ -76,9 +75,9 @@ class reformat_all_phonenumbers(models.TransientModel):
                             obj._description, name, unicode(e)))
                     continue
                 if any(
-                        [init_entry.get(field)
+                        init_entry.get(field)
                             != entry.get(field) for field
-                            in fields]):
+                            in fields):
                     entry.pop('id')
                     logger.info(
                         '[%s] Reformating phone number: FROM %s TO %s' % (

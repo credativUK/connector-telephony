@@ -4,6 +4,7 @@
 #    Base Phone module for Odoo 9
 #    Copyright (C) 2014 Alexis de Lattre <alexis@via.ecp.fr>
 #    Copyright (C) 2015 Juris Malinens <juris.malinens@gmail.com>
+#    Copyright (C) 2016 Ondřej Kuzník <ondrej.kuznik@credativ.co.uk>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as
