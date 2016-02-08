@@ -19,7 +19,8 @@
 #
 ##############################################################################
 
-from openerp import models, fields
+from openerp.exceptions import ValidationError
+from openerp import api, fields, models
 import logging
 
 logger = logging.getLogger(__name__)
