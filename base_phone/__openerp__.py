@@ -74,7 +74,7 @@ for any help or question about this module.
         'res_users_view.xml',
         'wizard/reformat_all_phonenumbers_view.xml',
         'wizard/number_not_found_view.xml',
-        'web_phone.xml',
+        #'web_phone.xml',
         ],
     'qweb': ['static/src/xml/*.xml'],
     'demo': ['base_phone_demo.xml'],
