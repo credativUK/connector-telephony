@@ -137,7 +137,7 @@ class PhoneCommon(models.AbstractModel):
         phoneobjects = self._get_phone_fields()
         phonefieldslist = []  # [('res.parter', 10), ('crm.lead', 20)]
         for objname in phoneobjects:
-            if self.env[objname].get(_phone_name_sequence):
+            if getattr(self.env[objname], '_phone_name_sequence', False):
                 phonefieldslist.append(
                     (objname, self.env[objname]._phone_name_sequence))
         phonefieldslist_sorted = sorted(
@@ -181,13 +181,9 @@ class PhoneCommon(models.AbstractModel):
         models = self.env['ir.model'].search([('transient', '=', False)])
         res = []
         for model in models:
-            senv = False
-            try:
-                senv = self.env[model.model]
-                if isinstance(senv.get(_phone_fields), list):
-                    res.append(model.model)
-            except:
-                pass
+            senv = self.env[model.model]
+            if isinstance(getattr(senv, '_phone_fields', False), list):
+                res.append(model.model)
         return res
 
     @api.model
