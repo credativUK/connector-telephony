@@ -19,7 +19,7 @@
 #
 ##############################################################################
 from openerp.exceptions import ValidationError
-from openerp import models, api, fields, api, _
+from openerp import models, api, fields, _
 import logging
 
 try:
@@ -40,14 +40,14 @@ class AsteriskServer(models.Model):
     name = fields.Char('Asterisk Server Name', size=50, required=True)
     active = fields.Boolean(
         'Active', help="The active field allows you to hide the Asterisk "
-        "server without deleting it.",default=True)
+        "server without deleting it.", default=True)
     ip_address = fields.Char(
         'Asterisk IP address or DNS', size=50, required=True,
         help="IP address or DNS name of the Asterisk server.")
     port = fields.Integer(
         'Port', required=True,
         help="TCP port on which the Asterisk Manager Interface listens. "
-        "Defined in /etc/asterisk/manager.conf on Asterisk.",default=5038)
+        "Defined in /etc/asterisk/manager.conf on Asterisk.", default=5038)
     out_prefix = fields.Char(
         'Out Prefix', size=4, help="Prefix to dial to make outgoing "
         "calls. If you don't use a prefix to make outgoing calls, "
@@ -70,11 +70,11 @@ class AsteriskServer(models.Model):
     wait_time = fields.Integer(
         'Wait Time (sec)', required=True,
         help="Amount of time (in seconds) Asterisk will try to reach "
-        "the user's phone before hanging up.",default=15)
+        "the user's phone before hanging up.", default=15)
     extension_priority = fields.Integer(
-        'Extension Priority', required=True,
+        'Extension Priority', required=True, default=1,
         help="Priority of the extension in the Asterisk dialplan. Refer "
-        "to /etc/asterisk/extensions.conf on your Asterisk server.",default=1)
+        "to /etc/asterisk/extensions.conf on your Asterisk server.")
     alert_info = fields.Char(
         'Alert-Info SIP Header', size=255,
         help="Set Alert-Info header in SIP request to user's IP Phone "
@@ -96,11 +96,8 @@ class AsteriskServer(models.Model):
         self.env['res.company']._company_default_get('asterisk.server'),
     }'''
 
-    #def _get_default_company(self):
-    #    return self.env['res.company']._company_default_get()
-
     @api.constrains('out_prefix', 'wait_time', 'extension_priority', 'port',
-            'context', 'alert_info', 'login', 'password')
+                    'context', 'alert_info', 'login', 'password')
     def _check_validity(self):
         for server in self:
             out_prefix = ('Out prefix', server.out_prefix)
@@ -110,64 +107,69 @@ class AsteriskServer(models.Model):
             password = ('AMI password', server.password)
 
             if out_prefix[1] and not out_prefix[1].isdigit():
-                raise ValidationError(_("Only use digits for the '%s' on the Asterisk server "
-                        "'%s'" % out_prefix[0], server.name))
+                raise ValidationError(
+                    _("Only use digits for the '%s' on the Asterisk server "
+                      "'%s'") % out_prefix[0], server.name)
             if server.wait_time < 1 or server.wait_time > 120:
-                raise ValidationError(_("You should set a 'Wait time' value between 1 and 120 "
-                        "seconds for the Asterisk server '%s'" % server.name))
+                raise ValidationError(
+                    _("You should set a 'Wait time' value between 1 and 120 "
+                      "seconds for the Asterisk server '%s'") % server.name)
             if server.extension_priority < 1:
-                raise ValidationError(_("The 'extension priority' must be a positive value for "
-                        "the Asterisk server '%s'" % server.name))
+                raise ValidationError(
+                    _("The 'extension priority' must be a positive value for "
+                      "the Asterisk server '%s'") % server.name)
             if server.port > 65535 or server.port < 1:
-                raise ValidationError(_("You should set a TCP port between 1 and 65535 for the "
-                        "Asterisk server '%s'" % server.name))
+                raise ValidationError(
+                    _("You should set a TCP port between 1 and 65535 for the "
+                      "Asterisk server '%s'") % server.name)
             for check_str in [dialplan_context, alert_info, login, password]:
                 if check_str[1]:
                     try:
                         check_str[1].encode('ascii')
                     except UnicodeEncodeError:
-                        raise ValidationError(_("The '%s' should only have ASCII caracters for "
-                                "the Asterisk server '%s'"
-                                % (check_str[0], server.name)))
+                        raise ValidationError(
+                            _("The '%s' should only have ASCII caracters for "
+                              "the Asterisk server '%s'")
+                            % (check_str[0], server.name))
         return True
 
     def _get_asterisk_server_from_user(self):
         '''Returns an asterisk.server browse object'''
         # We check if the user has an Asterisk server configured
-        #user = self.env['res.users'].browse(self.env.uid)
         user = self.env.user
         if user.asterisk_server_id.id:
             ast_server = user.asterisk_server_id
         else:
-            asterisk_server_ids = self.search([('company_id', '=', user.company_id.id)])
-        # If the user doesn't have an asterisk server,
-        # we take the first one of the user's company
+            # If the user doesn't have an asterisk server,
+            # we take the first one of the user's company
+            asterisk_server_ids = self.search(
+                [('company_id', '=', user.company_id.id)])
             if not asterisk_server_ids:
-                raise ValidationError(_("No Asterisk server configured for the company '%s'.")
+                raise ValidationError(
+                    _("No Asterisk server configured for the company '%s'.")
                     % user.company_id.name)
             else:
                 ast_server = self.browse(asterisk_server_ids[0])
         return ast_server
 
-    #@api.multi
     def _connect_to_asterisk(self):
         '''
         Open the connection to the Asterisk Manager
         Returns an instance of the Asterisk Manager
 
         '''
-        #env = Environment(cr, uid, context)
-        #user = self.env['res.users'].browse(self.env.uid)
         user = self.env.user
 
         ast_server = self._get_asterisk_server_from_user()
         # We check if the current user has a chan type
         if not user.asterisk_chan_type:
-            raise ValidationError(_('No channel type configured for the current user.'))
+            raise ValidationError(
+                _('No channel type configured for the current user.'))
 
         # We check if the current user has an internal number
         if not user.resource:
-            raise ValidationError(_('No resource name configured for the current user'))
+            raise ValidationError(
+                _('No resource name configured for the current user'))
 
         _logger.debug(
             "User's phone: %s/%s" % (user.asterisk_chan_type, user.resource))
@@ -185,8 +187,9 @@ class AsteriskServer(models.Model):
                 "Error in the request to the Asterisk Manager Interface %s"
                 % ast_server.ip_address)
             _logger.error("Here is the error message: %s" % e)
-            raise ValidationError(_("Problem in the request from OpenERP to Asterisk. "
-                  "Here is the error message: %s" % e))
+            raise ValidationError(
+                _("Problem in the request from OpenERP to Asterisk. "
+                  "Here is the error message: %s") % e)
 
         return (user, ast_server, ast_manager)
 
@@ -201,14 +204,15 @@ class AsteriskServer(models.Model):
                 self.password)
 
         except Exception, e:
-            raise ValidationError(_("Connection Test Failed!")+' '+_("Here is the error message: %s" % e))
+            raise ValidationError(_("Connection Test Failed!") + ' ' +
+                                  _("Here is the error message: %s") % e)
         finally:
             if ast_manager:
                 ast_manager.Logoff()
-        raise ValidationError(_("Connection Test Successfull!")+' '+_("Odoo can successfully login to the Asterisk Manager "
-                "Interface."))
+        raise ValidationError(_("Connection Test Successful!") + ' ' +
+                              _("Odoo can successfully login to the Asterisk "
+                                "Manager Interface."))
 
-    #@api.multi
     def _get_calling_number(self):
 
         user, ast_server, ast_manager = self._connect_to_asterisk()
@@ -227,15 +231,15 @@ class AsteriskServer(models.Model):
                     break
                 # 6 = Up
                 if (
-                        chan.get('ChannelState') == '6'
-                        and sip_account in chan.get('BridgedChannel', '')):
+                        chan.get('ChannelState') == '6' and
+                        sip_account in chan.get('BridgedChannel', '')):
                     _logger.debug("Found a matching Event in 'Up' state")
                     calling_party_number = chan.get('CallerIDNum')
                     break
                 # Compatibility with Asterisk 1.4
                 if (
-                        chan.get('State') == 'Up'
-                        and sip_account in chan.get('Link', '')):
+                        chan.get('State') == 'Up' and
+                        sip_account in chan.get('Link', '')):
                     _logger.debug("Found a matching Event in 'Up' state")
                     calling_party_number = chan.get('CallerIDNum')
                     break
@@ -245,8 +249,9 @@ class AsteriskServer(models.Model):
                 % ast_server.ip_address)
             _logger.error(
                 "Here are the details of the error: '%s'" % unicode(e))
-            raise ValidationError(_("Can't get calling number from  Asterisk.\nHere is the "
-                    "error: '%s'" % unicode(e)))
+            raise ValidationError(
+                _("Can't get calling number from  Asterisk.\nHere is the "
+                  "error: '%s'") % unicode(e))
 
         finally:
             ast_manager.Logoff()
@@ -259,7 +264,8 @@ class AsteriskServer(models.Model):
         calling_number = self._get_calling_number()
         # calling_number = "0641981246"
         if calling_number:
-            record = self.env['phone.common'].get_record_from_phone_number(calling_number)
+            record = self.env['phone.common'].\
+                get_record_from_phone_number(calling_number)
             if record:
                 return record
             else:
@@ -289,20 +295,22 @@ class res_users(models.Model):
         'CDR Account', size=50,
         help="Call Detail Record (CDR) account used for billing this "
         "user.")
-    asterisk_chan_type = fields.Selection([
-        ('SIP', 'SIP'),
-        ('IAX2', 'IAX2'),
-        ('DAHDI', 'DAHDI'),
-        ('Zap', 'Zap'),
-        ('Skinny', 'Skinny'),
-        ('MGCP', 'MGCP'),
-        ('mISDN', 'mISDN'),
-        ('H323', 'H323'),
-        ('SCCP', 'SCCP'),
-        ('Local', 'Local'),
+    asterisk_chan_type = fields.Selection(
+        [
+            ('SIP', 'SIP'),
+            ('IAX2', 'IAX2'),
+            ('DAHDI', 'DAHDI'),
+            ('Zap', 'Zap'),
+            ('Skinny', 'Skinny'),
+            ('MGCP', 'MGCP'),
+            ('mISDN', 'mISDN'),
+            ('H323', 'H323'),
+            ('SCCP', 'SCCP'),
+            ('Local', 'Local'),
         ], 'Asterisk Channel Type',
         help="Asterisk channel type, as used in the Asterisk dialplan. "
-        "If the user has a regular IP phone, the channel type is 'SIP'.",default='SIP')
+        "If the user has a regular IP phone, the channel type is 'SIP'.",
+        default='SIP')
     resource = fields.Char(
         'Resource Name', size=64,
         help="Resource name for the channel type selected. For example, "
@@ -336,16 +344,18 @@ class res_users(models.Model):
                 (_('Resource Name'), user.resource),
                 (_('Internal Number'), user.internal_number),
                 (_('Caller ID'), user.callerid),
-                ]
+            ]
             for check_string in strings_to_check:
                 if check_string[1]:
                     try:
                         check_string[1].encode('ascii')
                     except UnicodeEncodeError:
-                        raise ValidationError(_("The '%s' for the user '%s' should only have "
-                                "ASCII caracters"
-                            % (check_string[0], user.name)))
+                        raise ValidationError(
+                            _("The '%s' for the user '%s' should only have "
+                              "ASCII characters")
+                            % (check_string[0], user.name))
         return True
+
 
 class PhoneCommon(models.AbstractModel):
     _inherit = 'phone.common'
@@ -366,7 +376,8 @@ class PhoneCommon(models.AbstractModel):
 
         # The user should have a CallerID
         if not user.callerid:
-            raise ValidationError(_('No callerID configured for the current user'))
+            raise ValidationError(
+                _('No callerID configured for the current user'))
 
         variable = []
         if user.asterisk_chan_type == 'SIP':
@@ -400,8 +411,9 @@ class PhoneCommon(models.AbstractModel):
                 % ast_server.ip_address)
             _logger.error(
                 "Here are the details of the error: '%s'" % unicode(e))
-            raise ValidationError(_("Click to dial with Asterisk failed.\nHere is the error: "
-                    "'%s'")
+            raise ValidationError(
+                _("Click to dial with Asterisk failed.\nHere is the error: "
+                  "'%s'")
                 % unicode(e))
         finally:
             ast_manager.Logoff()

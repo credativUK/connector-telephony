@@ -31,5 +31,5 @@ class BasePhoneController(openerp.addons.web.http.Controller):
             phone_number, {
                 'click2dial_model': click2dial_model,
                 'click2dial_id': click2dial_id,
-                })
+            })
         return res

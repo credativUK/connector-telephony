@@ -37,7 +37,7 @@ class number_not_found(orm.TransientModel):
         'current_lead_mobile': fields.related(
             'to_update_lead_id', 'mobile', type='char',
             relation='crm.lead', string='Current Mobile', readonly=True),
-        }
+    }
 
     def create_lead(self, cr, uid, ids, context=None):
         '''Function called by the related button of the wizard'''
@@ -58,8 +58,8 @@ class number_not_found(orm.TransientModel):
                 'default_type': 'lead',
                 'stage_type': 'lead',
                 'needaction_menu_ref': 'crm.menu_crm_opportunities',
-                },
-            }
+            },
+        }
         return action
 
     def update_lead(self, cr, uid, ids, context=None):
@@ -82,8 +82,8 @@ class number_not_found(orm.TransientModel):
             'context': {
                 'stage_type': 'lead',
                 'needaction_menu_ref': 'crm.menu_crm_opportunities',
-                },
-            }
+            },
+        }
         return action
 
     def onchange_to_update_lead(
@@ -95,10 +95,10 @@ class number_not_found(orm.TransientModel):
             res['value'].update({
                 'current_lead_phone': to_update_lead.phone,
                 'current_lead_mobile': to_update_lead.mobile,
-                })
+            })
         else:
             res['value'].update({
                 'current_lead_phone': False,
                 'current_lead_mobile': False,
-                })
+            })
         return res

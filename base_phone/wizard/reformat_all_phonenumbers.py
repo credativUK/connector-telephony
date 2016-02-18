@@ -19,7 +19,6 @@
 #
 ##############################################################################
 
-from openerp.exceptions import ValidationError
 from openerp import api, fields, models
 import logging
 
@@ -33,10 +32,8 @@ class reformat_all_phonenumbers(models.TransientModel):
 
     phonenumbers_not_reformatted = fields.Text(
         string="Phone numbers that couldn't be reformatted")
-    state = fields.Selection([
-        ('draft', 'Draft'),
-        ('done', 'Done'),
-        ], string='State', default='draft')
+    state = fields.Selection([('draft', 'Draft'), ('done', 'Done')],
+                             string='State', default='draft')
 
     @api.multi
     def run_reformat_all_phonenumbers(self):
@@ -65,7 +62,7 @@ class reformat_all_phonenumbers(models.TransientModel):
                 # _generic_reformat_phonenumbers()
                 try:
                     obj.with_context(raise_if_phone_parse_fails=True).\
-                            _generic_reformat_phonenumbers([entry['id']], entry)
+                        _generic_reformat_phonenumbers([entry['id']], entry)
                 except Exception, e:
                     name = obj.name_get([init_entry['id']])[0][1]
                     phonenumbers_not_reformatted += \
@@ -76,9 +73,8 @@ class reformat_all_phonenumbers(models.TransientModel):
                             obj._description, name, unicode(e)))
                     continue
                 if any(
-                        init_entry.get(field)
-                            != entry.get(field) for field
-                            in fields):
+                        init_entry.get(field) != entry.get(field)
+                        for field in fields):
                     entry.pop('id')
                     logger.info(
                         '[%s] Reformating phone number: FROM %s TO %s' % (
@@ -88,8 +84,11 @@ class reformat_all_phonenumbers(models.TransientModel):
         if not phonenumbers_not_reformatted:
             phonenumbers_not_reformatted = \
                 'All phone numbers have been reformatted successfully.'
-        self.write({'phonenumbers_not_reformatted': phonenumbers_not_reformatted, 'state': 'done'})
+        self.write({
+            'phonenumbers_not_reformatted': phonenumbers_not_reformatted,
+            'state': 'done'})
         logger.info('End of the phone number reformatting wizard')
-        action = self.env['ir.actions.act_window'].for_xml_id('base_phone', 'reformat_all_phonenumbers_action')
+        action = self.env['ir.actions.act_window'].for_xml_id(
+            'base_phone', 'reformat_all_phonenumbers_action')
         action['res_id'] = self.id
         return action

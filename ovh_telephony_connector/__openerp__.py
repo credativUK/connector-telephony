@@ -31,7 +31,7 @@
     'external_dependencies': {'python': ['phonenumbers', 'SOAPpy']},
     'data': [
         'res_users_view.xml',
-        ],
+    ],
     'demo': [],
     'qweb': ['static/src/xml/*.xml'],
     'application': True,

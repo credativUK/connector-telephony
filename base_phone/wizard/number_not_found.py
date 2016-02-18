@@ -83,7 +83,7 @@ class NumberNotFound(models.TransientModel):
             'nodestroy': False,
             'target': 'current',
             'context': {'default_%s' % self.number_type: self.e164_number},
-            }
+        }
         return action
 
     @api.multi
@@ -102,7 +102,7 @@ class NumberNotFound(models.TransientModel):
             'target': 'current',
             'res_id': self.to_update_partner_id.id,
             'context': self.env.context,
-            }
+        }
         return action
 
     @api.depends('to_update_partner_id')

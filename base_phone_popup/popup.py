@@ -41,7 +41,7 @@ class PhoneCommon(models.AbstractModel):
                 'views': [[False, 'form']],  # Beurk, but needed
                 'target': 'new',
                 'res_id': record_res[1],
-                }
+            }
         else:
             action = {
                 'name': _('Number Not Found'),
@@ -58,14 +58,13 @@ class PhoneCommon(models.AbstractModel):
     def incall_notify_by_login(self, params):
         number = params['number']
         login_list = params['login_list']
-        login_list = set(login_list) #make unique
+        login_list = set(login_list)  # make unique
         login_list = list(login_list)
 
         assert isinstance(login_list, list), 'login_list must be a list'
 
-
         res = self.get_record_from_phone_number(number)
-        users = self.env['res.users'].search([('login', 'in', login_list)]) #.filtered(lambda u: u.login in login_list) #search([('login', 'in', login_list)])
+        users = self.env['res.users'].search([('login', 'in', login_list)])
         logger.debug(
             'Notify incoming call from number %s to users %s'
             % (number, users))
@@ -89,4 +88,5 @@ class PhoneCommon(models.AbstractModel):
 class ResUsers(models.Model):
     _inherit = 'res.users'
 
-    context_incall_popup =  fields.Boolean('Pop-up on Incoming Calls', default=True)
+    context_incall_popup = fields.Boolean('Pop-up on Incoming Calls',
+                                          default=True)

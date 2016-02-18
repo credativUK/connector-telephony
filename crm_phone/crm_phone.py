@@ -110,5 +110,5 @@ class PhoneCommon(models.AbstractModel):
             res.update({
                 'action_name': _('Create Call in CRM'),
                 'action_model': 'wizard.create.crm.phonecall',
-                })
+            })
         return res

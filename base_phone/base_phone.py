@@ -20,7 +20,6 @@
 ##############################################################################
 
 from openerp import models, fields, api, _
-from openerp.tools.safe_eval import safe_eval
 from openerp.exceptions import Warning
 import logging
 # Lib for phone number reformating -> pip install phonenumbers
@@ -203,9 +202,6 @@ class PhoneCommon(models.AbstractModel):
         '''
         assert(erp_number), 'Missing phone number'
         _logger.debug('Number before reformat = %s' % erp_number)
-        # erp_number are supposed to be in E.164 format, so no need to
-        # give a country code here
-        #return erp_number
         parsed_num = phonenumbers.parse(erp_number, None)
         country_code = self.env.user.company_id.country_id.code
         assert(country_code), 'Missing country on company'
@@ -271,4 +267,4 @@ class ResCompany(models.Model):
         'CHECK (number_of_digits_to_match_from_end > 0)',
         "The value of the field 'Number of Digits To Match From End' must "
         "be positive."),
-        ]
+    ]

@@ -102,7 +102,7 @@ http://www.akretion.com/products-and-services/openerp-asterisk-voip-connector
         'res_users_view.xml',
         'security/ir.model.access.csv',
         'web_asterisk_click2dial.xml',
-        ],
+    ],
     'demo': ['asterisk_click2dial_demo.xml'],
     'qweb': ['static/src/xml/*.xml'],
     'css': ['static/src/css/*.css'],

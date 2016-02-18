@@ -45,7 +45,7 @@ for any help or question about this module.
     'data': [
         'security/ir.model.access.csv',
         'hr_recruitment_view.xml',
-        ],
+    ],
     'images': [],
     'installable': False,
     'auto_install': True,

@@ -24,6 +24,7 @@ from openerp import http
 
 class AsteriskClick2dialController(http.Controller):
 
-    @http.route('/asterisk_click2dial/get_record_from_my_channel/', type='json', auth='public')
+    @http.route('/asterisk_click2dial/get_record_from_my_channel/',
+                type='json', auth='public')
     def get_record_from_my_channel(self, **kw):
         return http.request.env['asterisk.server'].get_record_from_my_channel()
