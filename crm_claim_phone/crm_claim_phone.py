@@ -20,24 +20,22 @@
 #
 ##############################################################################
 
-from openerp.osv import orm
+from openerp import models, api
 
 
-class crm_claim(orm.Model):
+class CrmClaim(models.Model):
     _name = 'crm.claim'
     _inherit = ['crm.claim', 'phone.common']
     _phone_fields = ['partner_phone']
     _country_field = None
     _partner_field = 'partner_id'
 
-    def create(self, cr, uid, vals, context=None):
-        vals_reformated = self._generic_reformat_phonenumbers(
-            cr, uid, None, vals, context=context)
-        return super(crm_claim, self).create(
-            cr, uid, vals_reformated, context=context)
+    @api.model
+    def create(self, vals):
+        vals_reformatted = self._generic_reformat_phonenumbers(vals)
+        return super(CrmClaim, self).create(vals_reformatted)
 
-    def write(self, cr, uid, ids, vals, context=None):
-        vals_reformated = self._generic_reformat_phonenumbers(
-            cr, uid, ids, vals, context=context)
-        return super(crm_claim, self).write(
-            cr, uid, ids, vals_reformated, context=context)
+    @api.multi
+    def write(self, vals):
+        vals_reformatted = self._generic_reformat_phonenumbers(vals)
+        return super(CrmClaim, self).write(vals_reformatted)

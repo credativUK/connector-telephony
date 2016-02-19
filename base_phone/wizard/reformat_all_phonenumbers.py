@@ -19,7 +19,7 @@
 #
 ##############################################################################
 
-from openerp import api, fields, models
+from openerp import api, fields, models, tools
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,50 +37,43 @@ class reformat_all_phonenumbers(models.TransientModel):
 
     @api.multi
     def run_reformat_all_phonenumbers(self):
+        self.ensure_one()
         logger.info('Starting to reformat all the phone numbers')
         phonenumbers_not_reformatted = ''
         phoneobjects = self.env['phone.common']._get_phone_fields()
         for objname in phoneobjects:
-            fields = self.env[objname]._phone_fields
             obj = self.env[objname]
+            fields = obj._phone_fields
             logger.info(
                 'Starting to reformat phone numbers on object %s '
                 '(fields = %s)' % (objname, fields))
             # search if this object has an 'active' field
-            if obj._columns.get('active') or objname == 'hr.employee':
-                # hr.employee inherits from 'resource.resource' and
-                # 'resource.resource' has an active field
-                # As I don't know how to detect such cases, I hardcode it here
-                # If you know a better solution, please tell me
-                domain = ['|', ('active', '=', True), ('active', '=', False)]
-            else:
-                domain = []
-            all_ids = obj.search(domain)
-            for entry in all_ids.read(fields):
-                init_entry = entry.copy()
-                # entry is _updated_ by the fonction
-                # _generic_reformat_phonenumbers()
+            domain = []
+            if obj._fields.get('active'):
+                domain += ['|', ('active', '=', True), ('active', '=', False)]
+            for entry in obj.search(domain):
+                orig_vals = entry.read()
+                vals = orig_vals.copy()
                 try:
-                    obj.with_context(raise_if_phone_parse_fails=True).\
-                        _generic_reformat_phonenumbers([entry['id']], entry)
+                    entry.with_context(raise_if_phone_parse_fails=True).\
+                        _generic_reformat_phonenumbers(vals)
                 except Exception, e:
-                    name = obj.name_get([init_entry['id']])[0][1]
+                    name = entry.name_get()[0][1]
+                    logger.exception("Problem on %s '%s'" %
+                        obj._description, name)
                     phonenumbers_not_reformatted += \
                         "Problem on %s '%s'. Error message: %s\n" % (
-                            obj._description, name, unicode(e))
-                    logger.warning(
-                        "Problem on %s '%s'. Error message: %s" % (
-                            obj._description, name, unicode(e)))
+                            obj._description, name, tools.ustr(e))
                     continue
-                if any(
-                        init_entry.get(field) != entry.get(field)
-                        for field in fields):
-                    entry.pop('id')
+
+                updates = {field: val.get(field) for field in fields
+                           if orig_vals.get(field) != vals.get(field)}
+                if updates:
                     logger.info(
                         '[%s] Reformating phone number: FROM %s TO %s' % (
-                            obj._description, unicode(init_entry),
-                            unicode(entry)))
-                    obj.write(init_entry['id'], entry)
+                            obj._description, tools.ustr(orig_vals),
+                            tools.ustr(vals)))
+                    entry.write(updates)
         if not phonenumbers_not_reformatted:
             phonenumbers_not_reformatted = \
                 'All phone numbers have been reformatted successfully.'

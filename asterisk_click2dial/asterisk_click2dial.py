@@ -19,7 +19,7 @@
 #
 ##############################################################################
 from openerp.exceptions import ValidationError
-from openerp import models, api, fields, _
+from openerp import tools, models, api, fields, _
 import logging
 
 try:
@@ -142,14 +142,12 @@ class AsteriskServer(models.Model):
         else:
             # If the user doesn't have an asterisk server,
             # we take the first one of the user's company
-            asterisk_server_ids = self.search(
-                [('company_id', '=', user.company_id.id)])
-            if not asterisk_server_ids:
+            ast_server = self.search(
+                [('company_id', '=', user.company_id.id)], limit=1)
+            if not ast_server:
                 raise ValidationError(
                     _("No Asterisk server configured for the company '%s'.")
                     % user.company_id.name)
-            else:
-                ast_server = self.browse(asterisk_server_ids[0])
         return ast_server
 
     def _connect_to_asterisk(self):
@@ -214,64 +212,58 @@ class AsteriskServer(models.Model):
                                 "Manager Interface."))
 
     def _get_calling_number(self):
-
         user, ast_server, ast_manager = self._connect_to_asterisk()
-        calling_party_number = False
         try:
+            sip_account = user.asterisk_chan_type + '/' + user.resource
             list_chan = ast_manager.Status()
             _logger.debug("Result of Status AMI request: %s", list_chan)
-            for chan in list_chan.values():
-                sip_account = user.asterisk_chan_type + '/' + user.resource
-                # 4 = Ring
-                if (
-                        chan.get('ChannelState') == '4' and
-                        chan.get('ConnectedLineNum') == user.internal_number):
-                    _logger.debug("Found a matching Event in 'Ring' state")
-                    calling_party_number = chan.get('CallerIDNum')
-                    break
-                # 6 = Up
-                if (
-                        chan.get('ChannelState') == '6' and
-                        sip_account in chan.get('BridgedChannel', '')):
-                    _logger.debug("Found a matching Event in 'Up' state")
-                    calling_party_number = chan.get('CallerIDNum')
-                    break
-                # Compatibility with Asterisk 1.4
-                if (
-                        chan.get('State') == 'Up' and
-                        sip_account in chan.get('Link', '')):
-                    _logger.debug("Found a matching Event in 'Up' state")
-                    calling_party_number = chan.get('CallerIDNum')
-                    break
+
+            channels = (list_chan[key] for key in list_chan
+                        if key.id.startswith('%s-' % sip_account))
+            for chan in channels:
+                state = None
+                if chan.get('State'):
+                    direction = 'out'
+                    state = chan['State'].lower()
+                elif chan.get('ChannelStateDesc'):
+                    direction = 'in'
+                    state = chan['ChannelStateDesc'].lower()
+                else:
+                    continue
+
+                res = {
+                    'state': state,
+                    'direction': direction,
+                    'number': chan.get('ConnectedLineNum'),
+                    'name': chan.get('ConnectedLineName'),
+                }
+
+                _logger.debug("Call information: '%s'" % res)
+                return res
         except Exception, e:
-            _logger.error(
+            _logger.exception(
                 "Error in the Status request to Asterisk server %s"
                 % ast_server.ip_address)
-            _logger.error(
-                "Here are the details of the error: '%s'" % unicode(e))
             raise ValidationError(
-                _("Can't get calling number from  Asterisk.\nHere is the "
-                  "error: '%s'") % unicode(e))
+                _("Failure when retrieving caller id from Asterisk.\n\n%s") %
+                tools.ustr(e))
 
         finally:
             ast_manager.Logoff()
 
-        _logger.debug("Calling party number: '%s'" % calling_party_number)
-        return calling_party_number
+        _logger.debug("No call information found")
+        return {}
 
     def get_record_from_my_channel(self):
+        caller_info = self._get_calling_number()
 
-        calling_number = self._get_calling_number()
-        # calling_number = "0641981246"
-        if calling_number:
+        if caller_info.get('number'):
             record = self.env['phone.common'].\
-                get_record_from_phone_number(calling_number)
+                get_record_from_phone_number(caller_info['number'])
             if record:
-                return record
-            else:
-                return calling_number
-        else:
-            return False
+                caller_info.update(record=record)
+
+        return caller_info
 
 
 class res_users(models.Model):

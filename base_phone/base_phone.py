@@ -31,18 +31,20 @@ _logger = logging.getLogger(__name__)
 class PhoneCommon(models.AbstractModel):
     _name = 'phone.common'
 
-    def _generic_reformat_phonenumbers(self, ids, vals):
+    @api.multi
+    def _generic_reformat_phonenumbers(self, vals):
         """Reformat phone numbers in E.164 format i.e. +33141981242"""
+        # allow empty self (create runs with _ids empty)
+        self and self.ensure_one()
+
         assert isinstance(self._country_field, (basestring, type(None))),\
             'Wrong self._country_field'
         assert isinstance(self._partner_field, (basestring, type(None))),\
             'Wrong self._partner_field'
         assert isinstance(self._phone_fields, list),\
             'self._phone_fields must be a list'
-        if ids and isinstance(ids, (int, long)):
-            ids = [ids]
         if any(vals.get(field) for field in self._phone_fields):
-            user = self.env['res.users'].browse(self.env.uid)
+            user = self.env.user
             # country_id on res.company is a fields.function that looks at
             # company_id.partner_id.addres(default).country_id
             country = None
@@ -50,14 +52,14 @@ class PhoneCommon(models.AbstractModel):
                 if vals.get(self._country_field):
                     country = self.env['res.country'].browse(
                         vals[self._country_field])
-                elif ids:
-                    country = getattr(self.browse(ids[0]), self._country_field, False)
+                elif self:
+                    country = getattr(self, self._country_field, False)
             elif self._partner_field:
                 if vals.get(self._partner_field):
                     country = self.env['res.partner'].browse(
                         vals[self._partner_field]).country_id
-                else:
-                    partner = getattr(self.browse(ids[0]), self._partner_field, False)
+                elif self:
+                    partner = getattr(self, self._partner_field, False)
                     if partner:
                         country = partner.country_id
             countrycode = country and country.code
@@ -223,12 +225,12 @@ class ResPartner(models.Model):
 
     @api.model
     def create(self, vals):
-        vals_reformated = self._generic_reformat_phonenumbers(None, vals)
+        vals_reformated = self._generic_reformat_phonenumbers(vals)
         return super(ResPartner, self).create(vals_reformated)
 
     @api.multi
     def write(self, vals):
-        vals_reformated = self._generic_reformat_phonenumbers(self._ids, vals)
+        vals_reformated = self._generic_reformat_phonenumbers(vals)
         return super(ResPartner, self).write(vals_reformated)
 
     @api.multi

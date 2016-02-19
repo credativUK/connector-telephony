@@ -33,7 +33,23 @@ odoo.define('asterisk_click2dial.click2dial', function (require) {
                     _t('Failure'),
                     _t('Problem in the connection to Asterisk'));
             }
-            else if (typeof r == 'string') {
+            else if (typeof r['record'] == 'object' && r['record'].length == 3) {
+                var record = r['record']
+                self.do_notify( // Not working
+                    _t('Success'),
+                    _t('Moving to %s ID %d', record[0], record[1]));
+                var action = {
+                    type: 'ir.actions.act_window',
+                    res_model: record[0],
+                    res_id: record[1],
+                    view_mode: 'form,tree',
+                    views: [[false, 'form']],
+                    target: 'new',
+                    context: {},
+                };
+                web_client.action_manager.do_action(action);
+            }
+            else if (typeof r['number'] == 'string') {
                  var action = {
                     name: _t('Number Not Found'),
                     type: 'ir.actions.act_window',
@@ -41,25 +57,15 @@ odoo.define('asterisk_click2dial.click2dial', function (require) {
                     view_mode: 'form',
                     views: [[false, 'form']],
                     target: 'new',
-                    context: {'default_calling_number': r},
+                    context: {'default_calling_number': r['number'],
+                              'default_caller_name': r['name'],},
                  };
                 web_client.action_manager.do_action(action);
- 
-                }
-            else if (typeof r == 'object' && r.length == 3) {
-                self.do_notify( // Not working
-                    _t('Success'),
-                    _t('Moving to %s ID %d', r[0], r[1]));
-                var action = {
-                    type: 'ir.actions.act_window',
-                    res_model: r[0],
-                    res_id: r[1],
-                    view_mode: 'form,tree',
-                    views: [[false, 'form']],
-                    target: 'current',
-                    context: {},
-                };
-                web_client.action_manager.do_action(action);
+            }
+            else {
+                 self.do_notify(
+                    _t('Info'),
+                    _t('No call in progress'));
             }
         });
        },

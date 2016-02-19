@@ -31,6 +31,9 @@ class NumberNotFound(models.TransientModel):
     _name = "number.not.found"
     _description = "Number not found"
 
+    caller_name = fields.Char(
+        'Caller ID', size=64, readonly=True,
+        help="Called ID name obtained from the telephony server")
     calling_number = fields.Char(
         'Calling Number', size=64, readonly=True,
         help="Phone number of calling party that has been obtained "
@@ -57,7 +60,7 @@ class NumberNotFound(models.TransientModel):
         res = super(NumberNotFound, self).default_get(fields_list) or {}
         if res.get('calling_number'):
             convert = self.env['res.partner']._generic_reformat_phonenumbers(
-                None, {'phone': res.get('calling_number')})
+                {'phone': res.get('calling_number')})
             parsed_num = phonenumbers.parse(convert.get('phone'))
             res['e164_number'] = phonenumbers.format_number(
                 parsed_num, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
@@ -82,7 +85,8 @@ class NumberNotFound(models.TransientModel):
             'type': 'ir.actions.act_window',
             'nodestroy': False,
             'target': 'current',
-            'context': {'default_%s' % self.number_type: self.e164_number},
+            'context': {'default_%s' % self.number_type: self.e164_number,
+                        'default_name': self.caller_name,},
         }
         return action
 
@@ -105,14 +109,18 @@ class NumberNotFound(models.TransientModel):
         }
         return action
 
-    @api.depends('to_update_partner_id')
-    @api.multi
-    def onchange_to_update_partner(self):
-        self.ensure_one()
-        if self.to_update_partner_id:
-            to_update_partner = self.to_update_partner_id
-            self.current_partner_phone = to_update_partner.phone
-            self.current_partner_mobile = to_update_partner.mobile
+    @api.model
+    def onchange_to_update_partner(self, ids, to_update_partner_id):
+        res = {'value': {}}
+        if to_update_partner_id:
+            to_update_partner = self.env['res.partner'].browse(to_update_partner_id)
+            res['value'].update({
+                'current_partner_phone': to_update_partner.phone,
+                'current_partner_mobile': to_update_partner.mobile,
+                })
         else:
-            self.current_partner_phone = False
-            self.current_partner_mobile = False
+            res['value'].update({
+                'current_partner_phone': False,
+                'current_partner_mobile': False,
+                })
+        return res
