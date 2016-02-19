@@ -360,6 +360,7 @@ class res_users(models.Model):
 class PhoneCommon(models.AbstractModel):
     _inherit = 'phone.common'
 
+    @api.model
     def click2dial(self, erp_number):
         res = super(PhoneCommon, self).click2dial(erp_number)
         if not erp_number:
