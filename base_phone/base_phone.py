@@ -51,13 +51,13 @@ class PhoneCommon(models.AbstractModel):
                     country = self.env['res.country'].browse(
                         vals[self._country_field])
                 elif ids:
-                    country = self.browse(ids[0]).get(self._country_field)
+                    country = getattr(self.browse(ids[0]), self._country_field, False)
             elif self._partner_field:
                 if vals.get(self._partner_field):
                     country = self.env['res.partner'].browse(
                         vals[self._partner_field]).country_id
                 else:
-                    partner = self.browse(ids[0]).get(self._partner_field)
+                    partner = getattr(self.browse(ids[0]), self._partner_field, False)
                     if partner:
                         country = partner.country_id
             countrycode = country and country.code
