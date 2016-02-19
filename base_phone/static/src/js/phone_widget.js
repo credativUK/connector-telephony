@@ -17,7 +17,7 @@ var base_phone = {};
 openerp.web.form.FieldChar = core.form_widget_registry.get('char');
 
 //var FieldPhone = form_common.AbstractField.extend(form_common.ReinitializeFieldMixin, {
-var FieldPhone = form_widgets.FieldChar.extend({
+core.form_widget_registry.get('phone').include({
         template: 'FieldPhone',
         widget_class: 'oe_form_field_phone',
         content: "",
@@ -31,7 +31,16 @@ var FieldPhone = form_widgets.FieldChar.extend({
         },
         render_value: function() {
             if (!this.get('effective_readonly')) {
-                this._super();
+                this.$input = this.$el.find('input')
+                var show_value = this.format_value(this.get('value'), '');
+                if (this.$input) {
+                    this.$input.val(show_value);
+                } else {
+                    if (this.password) {
+                        show_value = new Array(show_value.length + 1).join('*');
+                    }
+                    this.$el.text(show_value);
+                }
             } else {
                 var self = this;
                 var phone_num = this.get('value');
@@ -98,8 +107,6 @@ var FieldPhone = form_widgets.FieldChar.extend({
             location.href = 'tel:' + this.get('value');
         }
     });
-
-    core.form_widget_registry.add('phone', FieldPhone);
 
     //var FieldFax = form_common.AbstractField.extend(form_common.ReinitializeFieldMixin, {
     var FieldFax = form_widgets.FieldChar.extend({
