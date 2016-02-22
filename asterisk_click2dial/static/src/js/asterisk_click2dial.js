@@ -23,7 +23,7 @@ odoo.define('asterisk_click2dial.click2dial', function (require) {
         },
 
         on_open_caller: function (event) {
-            event.stopPropagation();
+            event.preventDefault();
             var self = this;
             self.rpc('/asterisk_click2dial/get_record_from_my_channel', {}).done(function(r) {
             console.log('RESULT RPC r='+r);
