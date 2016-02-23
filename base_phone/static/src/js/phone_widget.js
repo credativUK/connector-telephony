@@ -66,6 +66,7 @@ core.form_widget_registry.get('phone').include({
                 this.$el.find('#click2dial')
                     .text(click2dial_text)
                     .on('click', function(ev) {
+                        ev.preventDefault()
                         self.do_notify(
                             _t('Click2dial started'),
                             _t('Unhook your ringing phone'));
