@@ -44,7 +44,7 @@ odoo.define('asterisk_click2dial.click2dial', function (require) {
                     res_id: record[1],
                     view_mode: 'form,tree',
                     views: [[false, 'form']],
-                    target: 'new',
+                    target: 'current',
                     context: {},
                 };
                 web_client.action_manager.do_action(action);
