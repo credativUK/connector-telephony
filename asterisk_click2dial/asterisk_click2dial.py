@@ -181,13 +181,10 @@ class AsteriskServer(models.Model):
                 (ast_server.ip_address, ast_server.port),
                 ast_server.login, ast_server.password)
         except Exception, e:
-            _logger.error(
+            _logger.exception(
                 "Error in the request to the Asterisk Manager Interface %s"
                 % ast_server.ip_address)
-            _logger.error("Here is the error message: %s" % e)
-            raise ValidationError(
-                _("Problem in the request from OpenERP to Asterisk. "
-                  "Here is the error message: %s") % e)
+            raise ValidationError(_("Request to asterisk failed."))
 
         return (user, ast_server, ast_manager)
 
@@ -399,11 +396,9 @@ class PhoneCommon(models.AbstractModel):
                 account=user.cdraccount,
                 variable=variable)
         except Exception, e:
-            _logger.error(
+            _logger.exception(
                 "Error in the Originate request to Asterisk server %s"
                 % ast_server.ip_address)
-            _logger.error(
-                "Here are the details of the error: '%s'" % unicode(e))
             raise ValidationError(
                 _("Click to dial with Asterisk failed.\nHere is the error: "
                   "'%s'")
