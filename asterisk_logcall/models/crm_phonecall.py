@@ -19,7 +19,7 @@
 #
 ##############################################################################
 
-from openerp import api, models, fields
+from openerp import _, api, models, fields
 from datetime import datetime
 from time import mktime
 import logging
@@ -69,6 +69,7 @@ class PhoneCommon(models.AbstractModel):
             phonecall_data['opportunity_id'] = r[1]
             if r[2]:
                 phonecall_data['name'] = call_name_prefix % (r[2],)
+        record = self.env[r[0]].browse(r[1])
 
         users = users_obj.search([('internal_number', '=', caller_user)])
         if users:
@@ -85,6 +86,7 @@ class PhoneCommon(models.AbstractModel):
                         'res_id': phonecall_id.id,
                         'name': phonecall_data['name'],
                         'type': 'url',
+                        'mimetype': 'audio/wav',
                         'url': base_url.format(
                             caller_user=caller_user,
                             odoo_uniqueid=odoo_uniqueid.replace('.', '_'),
@@ -93,5 +95,10 @@ class PhoneCommon(models.AbstractModel):
                     }
                 attach_id = attach_obj.create(ir_attachment_data)
                 phonecall_id.write({'recording_id': attach_id.id})
+
+                message_format = _("Recorded %s call (%%sm)." % odoo_type)
+                record.message_post(
+                    body=message_format % (int(odoo_duration) / 60,),
+                    attachment_ids=attach_id._ids)
 
         return phonecall_id
