@@ -19,7 +19,9 @@
 #
 ##############################################################################
 
-from openerp import models, fields
+from openerp import api, models, fields
+from datetime import datetime
+from time import mktime
 import logging
 
 
@@ -33,10 +35,15 @@ class CrmPhonecall(models.Model):
 class PhoneCommon(models.AbstractModel):
     _inherit = 'phone.common'
 
-    def log_call_and_recording(self, cr, uid, odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid, context=None):
-        phonecall_obj = self.pool.get('crm.phonecall')
-        users_obj = self.pool.get('res.users')
-        attach_obj = self.pool.get('ir.attachment')
+    @api.model
+    @api.returns('crm.phonecall')
+    def log_call_and_recording(self, odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid):
+        phonecall_obj = self.env['crm.phonecall']
+        users_obj = self.env['res.users']
+        attach_obj = self.env['ir.attachment']
+
+        start_date = datetime.strptime(odoo_start, '%Y-%m-%d %H:%M:%S')
+        start_time = mktime(start_date.timetuple())
 
         caller_user, caller_external = odoo_type == 'incoming' and (odoo_dst, odoo_src) or (odoo_src, odoo_dst)
 
@@ -49,10 +56,11 @@ class PhoneCommon(models.AbstractModel):
                 'partner_id': False,
                 'duration': int(odoo_duration) / 60.0,
                 'state': 'done',
-                'start_time': odoo_start,
+                'start_time': start_time,
+                'date': odoo_start,
             }
 
-        r = self.get_record_from_phone_number(cr, uid, caller_external)
+        r = self.get_record_from_phone_number(caller_external)
         if r[0] == 'res.partner':
             phonecall_data['partner_id'] = r[1]
             if r[2]:
@@ -62,25 +70,28 @@ class PhoneCommon(models.AbstractModel):
             if r[2]:
                 phonecall_data['name'] = call_name_prefix % (r[2],)
 
-        users = users_obj.search(cr, uid, [('internal_number', '=', caller_user)])
+        users = users_obj.search([('internal_number', '=', caller_user)])
         if users:
-            phonecall_data['user_id'] = users[0]
+            phonecall_data['user_id'] = users._ids[0]
 
-        phonecall_id = phonecall_obj.create(cr, uid, phonecall_data, context=context)
+        phonecall_id = phonecall_obj.create(phonecall_data)
 
         if odoo_filename:
-            params = self.pool.get('ir.config_parameter')
-            base_url = params.get_param(cr, uid, 'crm.voip.ucp_url', default='')
+            params = self.env['ir.config_parameter']
+            base_url = params.get_param('crm.voip.ucp_url', default='')
             if base_url:
                 ir_attachment_data = {
                         'res_model': 'crm.phonecall',
-                        'res_id': phonecall_id,
+                        'res_id': phonecall_id.id,
                         'name': phonecall_data['name'],
                         'type': 'url',
-                        'url': base_url.format(caller_user=caller_user, odoo_uniqueid=odoo_uniqueid.replace('.', '_'), odoo_filename=odoo_filename),
+                        'url': base_url.format(
+                            caller_user=caller_user,
+                            odoo_uniqueid=odoo_uniqueid.replace('.', '_'),
+                            odoo_filename=odoo_filename),
                         'datas_fname': odoo_filename,
                     }
-                attach_id = attach_obj.create(cr, uid, ir_attachment_data, context=context)
-                phonecall_obj.write(cr, uid, [phonecall_id], {'recording_id': attach_id}, context=context)
+                attach_id = attach_obj.create(ir_attachment_data)
+                phonecall_id.write({'recording_id': attach_id.id})
 
-        return True
+        return phonecall_id
