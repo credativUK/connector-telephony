@@ -138,13 +138,13 @@ def main(options, arguments):
     for variable in stdinput.keys():
         stderr_write("%s = %s\n" % (variable, stdinput.get(variable)))
 
-    odoo_type = stdinput['agi_arg_1']
-    odoo_src = stdinput['agi_arg_2']
-    odoo_dst = stdinput['agi_arg_3']
-    odoo_duration = stdinput['agi_arg_4']
-    odoo_start = stdinput['agi_arg_5']
-    odoo_filename = stdinput['agi_arg_6']
-    odoo_uniqueid = stdinput['agi_arg_7']
+    odoo_type = stdinput.get('agi_arg_1', '')
+    odoo_src = stdinput.get('agi_arg_2', '')
+    odoo_dst = stdinput.get('agi_arg_3', '')
+    odoo_duration = stdinput.get('agi_arg_4', '')
+    odoo_start = stdinput.get('agi_arg_5', '')
+    odoo_filename = stdinput.get('agi_arg_6', '')
+    odoo_uniqueid = stdinput.get('agi_arg_7', '')
 
     method = 'log_call_and_recording'
 
