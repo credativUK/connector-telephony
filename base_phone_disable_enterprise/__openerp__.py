@@ -39,6 +39,7 @@ interfers with some of the community module functionality
     'data': [
       'views/web_phone.xml',
     ],
+    'js': ['static/src/js/*.js'],
     'images': [],
     'active': False,
 }
