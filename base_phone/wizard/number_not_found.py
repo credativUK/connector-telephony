@@ -95,8 +95,7 @@ class NumberNotFound(models.TransientModel):
         self.ensure_one()
         if not self.to_update_partner_id:
             raise ValidationError(_("Select the Partner to Update."))
-        self.env['res.partner'].write(
-            self.to_update_partner_id.id, {self.number_type: self.e164_number})
+        self.to_update_partner_id.write({self.number_type: self.e164_number})
         action = {
             'name': _('Partner: %s') % self.to_update_partner_id.name,
             'type': 'ir.actions.act_window',
