@@ -99,6 +99,7 @@ class PhoneCommon(models.AbstractModel):
                 message_format = _("Recorded %s call (%%sm)." % odoo_type)
                 record.message_post(
                     body=message_format % (int(odoo_duration) / 60,),
+                    message_type='comment',
                     attachment_ids=attach_id._ids)
 
         return phonecall_id
