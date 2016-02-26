@@ -61,7 +61,10 @@ class PhoneCommon(models.AbstractModel):
             }
 
         r = self.get_record_from_phone_number(caller_external)
-        if r[0] == 'res.partner':
+        if not r:
+            logger.warning("No partner found for number %s" % caller_external)
+            return phonecall_obj
+        elif r[0] == 'res.partner':
             phonecall_data['partner_id'] = r[1]
             if r[2]:
                 phonecall_data['name'] = call_name_prefix % (r[2],)

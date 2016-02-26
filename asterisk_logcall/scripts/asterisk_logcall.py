@@ -163,7 +163,7 @@ def main(options, arguments):
             odoo.login(options.database, options.username, options.password)
             res = odoo.execute(
                 'phone.common', 'log_call_and_recording', odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid, arguments)
-            stdout_write('VERBOSE "Called method %s"\n' % method)
+            stdout_write('VERBOSE "Called method %s, returned %s"\n' % (method, res))
         except:
             stdout_write(
                 'VERBOSE "Could not connect to OpenERP in JSON-RPC"\n')
@@ -181,7 +181,7 @@ def main(options, arguments):
             res = sock.execute(
                 options.database, options.userid, options.password,
                 'phone.common', 'log_call_and_recording', odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid, arguments)
-            stdout_write('VERBOSE "Called method %s"\n' % method)
+            stdout_write('VERBOSE "Called method %s, returned %s"\n' % (method, res))
         except Exception, e:
             raise
             stdout_write('VERBOSE "Could not connect to OpenERP in XML-RPC"\n')
