@@ -42,6 +42,7 @@ class reformat_all_phonenumbers(models.TransientModel):
         phonenumbers_not_reformatted = ''
         phoneobjects = self.env['phone.common']._get_phone_fields()
         for objname in phoneobjects:
+            processed = updated = 0
             obj = self.env[objname]
             fields = obj._phone_fields
             logger.info(
@@ -51,29 +52,62 @@ class reformat_all_phonenumbers(models.TransientModel):
             domain = []
             if obj._fields.get('active'):
                 domain += ['|', ('active', '=', True), ('active', '=', False)]
-            for entry in obj.search(domain):
-                orig_vals = entry.read()
-                vals = orig_vals.copy()
-                try:
-                    entry.with_context(raise_if_phone_parse_fails=True).\
-                        _generic_reformat_phonenumbers(vals)
-                except Exception, e:
-                    name = entry.name_get()[0][1]
-                    logger.exception("Problem on %s '%s'" %
-                        obj._description, name)
-                    phonenumbers_not_reformatted += \
-                        "Problem on %s '%s'. Error message: %s\n" % (
-                            obj._description, name, tools.ustr(e))
-                    continue
+            ids = obj.search(domain)._ids
+            try:
+                new_cr = self.env.registry.cursor()
+                env = api.Environment(new_cr, self.env.uid, self.env.context)
+                obj = env[objname]
+                while ids:
+                    updated_uncommitted = processed_uncommitted = 0
+                    current, ids = ids[:100], ids[100:]
+                    for entry in obj.browse(current):
+                        def strip_displayname(value):
+                            """read returns (id, diplay_name) on many2one"""
+                            return value[0] if isinstance(value, tuple) else value
 
-                updates = {field: val.get(field) for field in fields
-                           if orig_vals.get(field) != vals.get(field)}
-                if updates:
+                        orig_vals = entry.read()[0]
+                        orig_vals = {key: strip_displayname(value)
+                                     for key, value in orig_vals.iteritems()}
+                        vals = orig_vals.copy()
+
+                        try:
+                            entry.with_context(raise_if_phone_parse_fails=True).\
+                                _generic_reformat_phonenumbers(vals)
+                        except Exception, e:
+                            name = entry.name_get()[0][1]
+                            logger.exception("Problem on %s '%s'" %
+                                (obj._description, name))
+                            phonenumbers_not_reformatted += \
+                                "Problem on %s '%s'. Error message: %s\n" % (
+                                    obj._description, name, tools.ustr(e))
+                            continue
+
+                        updates = {field: vals.get(field) for field in fields
+                                if orig_vals.get(field) != vals.get(field)}
+                        if updates:
+                            logger.info(
+                                '[%s] Reformating phone number: FROM %s TO %s' % (
+                                    obj._description,
+                                    tools.ustr({key: orig_vals.get(key) for key in updates}),
+                                    tools.ustr(updates)))
+                            entry.write(updates)
+                            updated_uncommitted += 1
+                        processed_uncommitted += 1
+                    updated += updated_uncommitted
+                    processed += processed_uncommitted
                     logger.info(
-                        '[%s] Reformating phone number: FROM %s TO %s' % (
-                            obj._description, tools.ustr(orig_vals),
-                            tools.ustr(vals)))
-                    entry.write(updates)
+                        '[%s] Committing changes: %d/%d records updated, %d remain' % (
+                            obj._description, updated_uncommitted, processed_uncommitted, len(ids)))
+                    new_cr.commit()
+                logger.info(
+                    '[%s] Finished: %d records processed, %d records updated' % (
+                        obj._description, processed, updated))
+            except Exception, e:
+                phonenumbers_not_reformatted += "Processing model '%s' failed\n" % objname
+                logger.exception("Reformatting on model '%s' failed, processed %d records with %d updates" % (objname, processed, updated))
+                new_cr.rollback()
+            finally:
+                new_cr.close()
         if not phonenumbers_not_reformatted:
             phonenumbers_not_reformatted = \
                 'All phone numbers have been reformatted successfully.'
