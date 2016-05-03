@@ -20,7 +20,9 @@
 ##############################################################################
 
 from openerp import _, api, models, fields
+from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from datetime import datetime
+from pytz import timezone, utc
 from time import mktime
 import logging
 
@@ -37,13 +39,17 @@ class PhoneCommon(models.AbstractModel):
 
     @api.model
     @api.returns('crm.phonecall')
-    def log_call_and_recording(self, odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid):
+    def log_call_and_recording(self, odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid, tz=None):
         phonecall_obj = self.env['crm.phonecall']
         users_obj = self.env['res.users']
         attach_obj = self.env['ir.attachment']
 
+        tz = timezone(tz) if tz else utc
         start_date = datetime.strptime(odoo_start, '%Y-%m-%d %H:%M:%S')
+        start_date = tz.localize(start_date)
+
         start_time = mktime(start_date.timetuple())
+        odoo_start = start_date.astimezone(utc).strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 
         caller_user, caller_external = odoo_type == 'incoming' and (odoo_dst, odoo_src) or (odoo_src, odoo_dst)
 

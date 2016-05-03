@@ -94,6 +94,9 @@ options = [
     {'names': ('-w', '--password'), 'dest': 'password', 'type': 'string',
         'action': 'store', 'default': 'demo',
         'help': "Password of the OpenERP user. Default = 'demo'"},
+    {'names': ('-z', '--timezone'), 'dest': 'timezone', 'type': 'string',
+        'action': 'store', 'default': 'UTC',
+        'help': "The timezone associated with odoo_start"},
 ]
 
 def stdout_write(string):
@@ -147,6 +150,7 @@ def main(options, arguments):
     odoo_uniqueid = stdinput.get('agi_arg_7', '')
 
     method = 'log_call_and_recording'
+    timezone = options.timezone
 
     res = False
     # Yes, this script can be used without "-s openerp_server" !
@@ -162,7 +166,7 @@ def main(options, arguments):
             odoo = odoorpc.ODOO(options.server, proto, options.port)
             odoo.login(options.database, options.username, options.password)
             res = odoo.execute(
-                'phone.common', 'log_call_and_recording', odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid, arguments)
+                'phone.common', 'log_call_and_recording', odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid, timezone, arguments)
             stdout_write('VERBOSE "Called method %s, returned %s"\n' % (method, res))
         except:
             stdout_write(
@@ -180,7 +184,7 @@ def main(options, arguments):
         try:
             res = sock.execute(
                 options.database, options.userid, options.password,
-                'phone.common', 'log_call_and_recording', odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid, arguments)
+                'phone.common', 'log_call_and_recording', odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid, timezone, arguments)
             stdout_write('VERBOSE "Called method %s, returned %s"\n' % (method, res))
         except Exception, e:
             raise
