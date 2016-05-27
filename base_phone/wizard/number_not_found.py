@@ -58,7 +58,8 @@ class NumberNotFound(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super(NumberNotFound, self).default_get(fields_list) or {}
-        if res.get('calling_number'):
+        if res.get('calling_number') and \
+                res['calling_number'].lower() != 'anonymous':
             convert = self.env['res.partner']._generic_reformat_phonenumbers(
                 {'phone': res.get('calling_number')})
             parsed_num = phonenumbers.parse(convert.get('phone'))
