@@ -51,10 +51,6 @@ EOF
 
 """
 
-import xmlrpclib
-import sys
-from optparse import OptionParser
-
 __author__ = "Craig Gowing <craig.gowing@credativ.co.uk> & Alexis de Lattre <alexis.delattre@akretion.com>"
 __date__ = "February 2016"
 __version__ = "0.2"
@@ -186,12 +182,8 @@ def main(options, arguments):
                 options.database, options.userid, options.password,
                 'phone.common', 'log_call_and_recording', odoo_type, odoo_src, odoo_dst, odoo_duration, odoo_start, odoo_filename, odoo_uniqueid, timezone, arguments)
             stdout_write('VERBOSE "Called method %s, returned %s"\n' % (method, res))
-        except Exception, e:
-            raise
+        except:
             stdout_write('VERBOSE "Could not connect to OpenERP in XML-RPC"\n')
-        # To simulate a long execution of the XML-RPC request
-        # import time
-        # time.sleep(5)
 
     return True
 
