@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Asterisk Click2dial_prefix module for Odoo
+  Copyright (C) 2016 Ondřej Kuzník <ondrej.kuznik@credativ.co.uk>
+  The licence is in the file __openerp__.py
+-->
+
+<template>
+
+    <!-- Add Dial button in phone widget for click2dial feature with prefix choice -->
+    <t t-extend="FieldPhone">
+        <t t-jquery="a#click2dial" t-operation="after">
+            <a id="click2dial_prefix" href="#" class="oe_bold"/>
+        </t>
+    </t>
+
+</template>

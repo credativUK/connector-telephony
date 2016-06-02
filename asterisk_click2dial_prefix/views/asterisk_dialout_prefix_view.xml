@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Asterisk Click2dial_prefix module for Odoo
+  Copyright (C) 2016 Ondřej Kuzník <ondrej.kuznik@credativ.co.uk>
+  The licence is in the file __openerp__.py
+-->
+
+<openerp>
+<data>
+
+<!-- Tree view for asterisk.dialout.prefix -->
+<record id="view_asterisk_dialout_prefix_tree" model="ir.ui.view">
+    <field name="name">asterisk.dialout.prefix.tree</field>
+    <field name="model">asterisk.dialout.prefix</field>
+    <field name="arch" type="xml">
+        <tree editable="bottom" string="Dialout Options">
+            <field name="name" />
+            <field name="prefix" />
+            <field name="server_id" />
+        </tree>
+    </field>
+</record>
+
+<!-- Action for asterisk.dialout.prefix -->
+<record id="action_asterisk_dialout_prefix" model="ir.actions.act_window">
+    <field name="name">Asterisk Dialout Prefixes</field>
+    <field name="res_model">asterisk.dialout.prefix</field>
+    <field name="view_mode">tree</field>
+</record>
+
+<!-- Menu entry under Settings > Technical > Phone -->
+<menuitem action="action_asterisk_dialout_prefix" id="act_menu_ast_dialout_prefix" parent="base_phone.menu_config_phone" sequence="55"/>
+
+
+</data>
+</openerp>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Asterisk Click2dial_prefix module for Odoo
+  Copyright (C) 2016 Ondřej Kuzník <ondrej.kuznik@credativ.co.uk>
+  The licence is in the file __openerp__.py
+-->
+
+<openerp>
+<data>
+
+<record id="asterisk_dialout_prefix_wizard_form" model="ir.ui.view">
+    <field name="name">asterisk.dialout.prefix.wizard.form</field>
+    <field name="model">asterisk.dialout.prefix.wizard</field>
+    <field name="arch" type="xml">
+        <form string="Choose dial mode" version="7.0">
+            <group name="mode" string="Choose a dial mode">
+                <field name="prefix" />
+            </group>
+            <footer>
+                <button name="click2dial" class="oe_highlight" string="Dial"
+                    type="object" />
+                <button special="cancel" string="Close" class="oe_link"/>
+            </footer>
+        </form>
+    </field>
+</record>
+
+
+</data>
+</openerp>
