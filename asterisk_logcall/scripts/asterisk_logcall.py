@@ -122,7 +122,7 @@ def main(options, arguments):
             break
         line = input_line.strip()
         try:
-            variable, value = line.split(':')
+            variable, value = line.split(':', 1)
         except:
             break
         if variable[:4] != 'agi_':  # All AGI parameters start with 'agi_'
