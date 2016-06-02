@@ -350,6 +350,14 @@ class PhoneCommon(models.AbstractModel):
     _inherit = 'phone.common'
 
     @api.model
+    def _transform_number(self, ast_server, ast_number):
+        # Add 'out prefix'
+        if ast_server.out_prefix:
+            _logger.debug('Out prefix = %s' % ast_server.out_prefix)
+            ast_number = '%s%s' % (ast_server.out_prefix, ast_number)
+        return ast_number
+
+    @api.model
     def click2dial(self, erp_number):
         res = super(PhoneCommon, self).click2dial(erp_number)
         if not erp_number:
@@ -358,10 +366,7 @@ class PhoneCommon(models.AbstractModel):
         user, ast_server, ast_manager = \
             self.env['asterisk.server']._connect_to_asterisk()
         ast_number = self.convert_to_dial_number(erp_number)
-        # Add 'out prefix'
-        if ast_server.out_prefix:
-            _logger.debug('Out prefix = %s' % ast_server.out_prefix)
-            ast_number = '%s%s' % (ast_server.out_prefix, ast_number)
+        ast_number = self._transform_number(ast_server, ast_number)
         _logger.debug('Number to be sent to Asterisk = %s' % ast_number)
 
         # The user should have a CallerID
