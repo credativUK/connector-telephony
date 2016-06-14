@@ -10,7 +10,7 @@
     <!-- Add Dial button in phone widget for click2dial feature with prefix choice -->
     <t t-extend="FieldPhone">
         <t t-jquery="a#click2dial" t-operation="after">
-            <a id="click2dial_prefix" href="#" class="oe_bold"/>
+            <a id="click2dial_prefix" href="#" class="btn btn-sm btn-primary"/>
         </t>
     </t>
 
